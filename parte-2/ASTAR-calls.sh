@@ -24,5 +24,3 @@ python3 ASTARRodaje.py ./ASTAR-tests/mapa11.csv 1
 python3 ASTARRodaje.py ./ASTAR-tests/mapa11.csv 2
 python3 ASTARRodaje.py ./ASTAR-tests/mapa12.csv 1
 python3 ASTARRodaje.py ./ASTAR-tests/mapa12.csv 2
-python3 ASTARRodaje.py ./ASTAR-tests/mapa13.csv 1
-python3 ASTARRodaje.py ./ASTAR-tests/mapa13.csv 2
