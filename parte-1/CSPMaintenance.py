@@ -2,9 +2,12 @@
 #-*- coding: utf-8 -*-
 
 import constraint
+import sys
+import re
 
 
-FRANJAS = 4;
+global NFRANJAS, FILAS, COLUMNAS, dominio, variables
+global problem
 
 class Avion:
     """Clase para representar un avión en una franja de tiempo específica"""
@@ -143,65 +146,14 @@ class Taller:
         return f'{self.tipo}({self.row},{self.col})'
 
 
-
-
-problem = constraint.Problem()
-
-"""domain = []
-for r in range(ROWS):
-    row = []
-    for c in range(COLUMNS):
-        taller = Taller(r, c, "STD" if c % 2 == 0 else "PRK")
-        row.append(taller)
-    domain.append(row)"""
-
-# Falta por implementar la función que lea la cuadrícula de la input file,
-# por ahora he asignado valores en el código (cuadrícula 5x5 de ejemplo en el enunciado)
-domain = [
-    [Taller(0, 0, "PRK"), Taller(0, 1, "STD"), Taller(0, 2, "PRK"), Taller(0, 3, "SPC"), Taller(0, 4, "PRK")],
-    [Taller(1, 0, "STD"), Taller(1, 1, "STD"), Taller(1, 2, "STD"), Taller(1, 3, "STD"), Taller(1, 4, "PRK")],
-    [Taller(2, 0, "STD"), Taller(2, 1, "SPC"), Taller(2, 2, "STD"), Taller(2, 3, "SPC"), Taller(2, 4, "PRK")],
-    [Taller(3, 0, "SPC"), Taller(3, 1, "PRK"), Taller(3, 2, "PRK"), Taller(3, 3, "STD"), Taller(3, 4, "PRK")],
-    [Taller(4, 0, "PRK"), Taller(4, 1, "STD"), Taller(4, 2, "STD"), Taller(4, 3, "SPC"), Taller(4, 4, "PRK")]
-]
-
-print("Talleres del problema: ")
-for row in domain:
-    print(row)
-
-# Falta la función que tome los valores de la input file, los he asignado en el código por ahora
-print("Aviones del problema: ")
-aviones = [Avion(1, "JMB", True, 2, 2, 0),
-           Avion(2, "STD", False, 1, 3, 0),
-           Avion(3, "STD", False, 3, 0, 0),
-           #Avion(4, "JMB", True, 1, 1, 0),
-           # Puedes probar que con cuadrícula 5x5, 4 franjas y
-           # 4 aviones encuentra solución, pero con 5 aviones no
-           Avion(5, "STD", False, 2, 2, 0)]
-
-# Asignamos las variables
-variables = []
-for i in range(len(aviones)):
-    avion = []
-    for j in range(FRANJAS):
-        A = Avion(i + 1, aviones[i].tipo, aviones[i].restr, aviones[i].t1, aviones[i].t2, j)
-        # Variable es un avión en una franja específica, el dominio son todos los talleres
-        problem.addVariable(A, [element for row in domain for element in row])
-        avion.append(A)
-        #print("Avion ", A.id, ": t1 = ", A.t1, ", t2 = ", A.t2)
-    variables.append(avion)
-    print(avion)
-#print(variables)
-
-
 # Restricción de no más de 2 aviones por taller y solo 1 puede ser JMB
-# Uso una función exterior para poder acceder tanto a la información de los aviones en la franja y
+# Usamos funciones anidadas para poder acceder tanto a la información de los aviones en la franja y
 # a las asignaciones que se hagan durante la resolución (pasadas por referencia)
 def limite_aviones_por_taller_exterior(aviones_franja):
     def limite_aviones_por_taller(*assignments):
         # Assignments contiene las asignaciones de tipo Taller a las variables de tipo Avion
         # aviones_franja es una lista los aviones de una sola franja de tiempo
-        # Contamos en dos diccionarios la cantidad de aviones y aviones JMB para cada Taller asignado
+        # Contamos en 2 diccionarios la cantidad de aviones y aviones JMB para cada Taller asignado
         #print(assignments)
         #print(aviones_franja)
 
@@ -227,13 +179,13 @@ def limite_aviones_por_taller_exterior(aviones_franja):
 
 # Al menos un taller adyacente libre para cada taller asignado a un avión
 def parking_adyacente_vacio(*assignments):
-    global domain   # Usamos la matriz de talleres con la que se define el problema
-    rows = len(domain)
-    cols = len(domain[0])
+    global dominio      # Usamos la matriz de talleres con la que se define el problema
+    global FILAS
+    global COLUMNAS
 
-    occupied_positions = {(taller.row, taller.col) for taller in
+    posiciones_ocupadas = {(taller.row, taller.col) for taller in
                           assignments}  # Posiciones ocupadas
-    #print(occupied_positions)
+    #print(posiciones_ocupadas)
 
     for taller in assignments:
         #print(taller)
@@ -241,32 +193,32 @@ def parking_adyacente_vacio(*assignments):
 
         # Obtener posiciones adyacentes sin salir del rango
         adjacent_positions = [
-            (r - 1, c),  # Above
-            (r + 1, c),  # Below
-            (r, c - 1),  # Left
-            (r, c + 1)  # Right
+            (r - 1, c),
+            (r + 1, c),
+            (r, c - 1),
+            (r, c + 1)
         ]
         adjacent_positions = [
             (ar, ac) for ar, ac in adjacent_positions
-            if 0 <= ar < rows and 0 <= ac < cols  # Eliminar las posiciones adyacentes fuera de rango
+            if 0 <= ar < FILAS and 0 <= ac < COLUMNAS  # Eliminar las posiciones fuera de rango
         ]
-        #print(adjacent_positions)
+        # print(adjacent_positions)
 
         # Devolver false si no hay ninguna posición adyacente no en las posiciones ocupadas
-        if not any((ar, ac) not in occupied_positions for ar, ac in adjacent_positions):
-            #print(False)
+        if not any((ar, ac) not in posiciones_ocupadas for ar, ac in adjacent_positions):
+            # print(False)
             return False
 
-    #print(True)
-    #print(occupied_positions)
+    # print(True)
+    # print(posiciones_ocupadas)
     return True
 
-# No puede haber aviones de tipo JMB adyacentes en el grid
+# No puede haber aviones de tipo JMB adyacentes en la cuadrícula
 def no_jmb_adyacentes_exterior(aviones_franja):
     def no_jmb_adyacentes(*assignments):
-        global domain
+        global dominio
         # Posiciones ocupadas
-        position_map = {(taller.row, taller.col): taller for row in domain for taller in row}
+        position_map = {(taller.row, taller.col): taller for taller in dominio}
 
         # Posiciones ocupadas por aviones JMB
         jmb_positions = {
@@ -296,17 +248,6 @@ def no_jmb_adyacentes_exterior(aviones_franja):
     return no_jmb_adyacentes    # Devolvemos el valor de la función interior
 
 
-# Añadimos las retricciones relacionadas con la posición de los aviones para cada franja específica
-print("Añadiendo restricciones posicionales.")
-for franja in range(FRANJAS):
-    aviones_franja = [avion_i[franja] for avion_i in variables]
-    problem.addConstraint(parking_adyacente_vacio, aviones_franja)
-    # Para las funciones exteriores pasamos los aviones de cada franja como parámetro para poder
-    # operar con sus datos
-    problem.addConstraint(no_jmb_adyacentes_exterior(aviones_franja), aviones_franja)
-    problem.addConstraint(limite_aviones_por_taller_exterior(aviones_franja), aviones_franja)
-
-
 # Restricción de que todos las tareas tienen que hacerse en todos los aviones a lo largo de todas
 # las franjas. Esta restricción permite que las tareas STD se hagan en talleres SPC
 def hacer_tareas_total_exterior(avion):
@@ -321,12 +262,6 @@ def hacer_tareas_total_exterior(avion):
         #print(avion[0].id, assignments)
         return numero_tareas == avion[0].t1 + avion[0].t2   # ¿Todas las tareas hechas?
     return hacer_tareas_total   # Devolvemos el valor de la función interior
-
-# Añadimos la restricción de completitud de tareas t1 y t2 a todas las listas
-# de cada avión, que incluyen el avión en las diferentes franjas horarias
-for avion in variables:
-    print("Añadiendo restricción de tareas totales al avión ", avion)
-    problem.addConstraint(hacer_tareas_total_exterior(avion), avion)
 
 
 # Restricción de que todos las tareas SPC tienen que hacerse en todos
@@ -344,42 +279,145 @@ def hacer_tareas_spc_exterior(avion):
     return hacer_tareas_spc # Devolvemos el valor de la función interior
 
 
-# Añadimos la restricción de completitud de tareas t2 a todas las listas
-# de cada avión, que incluyen el avión en las diferentes franjas horarias
-for avion in variables:
-    #print(avion)
-    print("Añadiendo restricción de tareas SPC al avión ", avion)
-    problem.addConstraint(hacer_tareas_spc_exterior(avion), avion)
-
-
 # Tareas SPC hechas todas antes de entrar a un taller STD
-def tareas_spc_primero(*assignments):
-    entrada_tayer_std = False   # ¿Se ha entrado anteriormente a un taller STD?
-    for taller in assignments:
-        if taller.tipo == "STD":
-            entrada_tayer_std = True
-        elif entrada_tayer_std:     # Se ha asignado un taller SPC después de entrar en uno STD
-            #print("False: ", assignments)
-            return False
-    #print("True: ", assignments)
-    return True
+def tareas_spc_primero_exterior(avion):
+    def tareas_spc_primero(*assignments):
+        cuenta_acceso_talleres_spc = 0
+        for taller in assignments:
+            if cuenta_acceso_talleres_spc < avion[0].t2:    # Tareas SPC sin completar
+                if taller.tipo == "SPC":    # Completamos una tarea SPC
+                    cuenta_acceso_talleres_spc += 1
+                elif taller.tipo == "STD":   # Acceso a un STD sin completar todas las tareas SPC
+                    return False
+        return True
+    return tareas_spc_primero
 
-# Añadimos la restricción de completitud de tareas t2 antes de t1 a todas las listas
-# de cada avión en las diferentes franjas horarias si tienen restr==True
-for avion in variables:
-    #print(avion)
-    if avion[0].restr:
-        print("Añadiendo restricción de tareas SPC antes de STD al avión ", avion)
-        problem.addConstraint(tareas_spc_primero, avion)
 
-# Obtenemos una solución y la mostramos
-solution = problem.getSolution()
-print("Solución encontrada: ", solution)
+def añadir_restricciones():
+    global problem, variables, NFRANJAS
 
-"""solutions = problem.getSolutions()
-if not solutions:
-    print("No solutions found")
-else:
-    for solution in solutions:
-        print(solution)
-    print(len(solutions), " solutions found")"""
+    # Añadimos las retricciones relacionadas con la posición de los aviones para cada franja específica
+    print("Añadiendo restricciones posicionales.")
+    for franja in range(NFRANJAS):
+        aviones_franja = [avion_i[franja] for avion_i in variables]
+        problem.addConstraint(parking_adyacente_vacio, aviones_franja)
+        # Para las funciones exteriores pasamos los aviones de cada franja como parámetro para poder
+        # operar con sus datos
+        problem.addConstraint(no_jmb_adyacentes_exterior(aviones_franja), aviones_franja)
+        problem.addConstraint(limite_aviones_por_taller_exterior(aviones_franja), aviones_franja)
+
+    # Añadimos la restricción de completitud de tareas totales y tareas t2 a todas las listas
+    # de cada avión, que incluyen el avión en las diferentes franjas horarias
+    for avion in variables:
+        print("Añadiendo restricciones de tareas al avión ", avion)
+        problem.addConstraint(hacer_tareas_total_exterior(avion), avion)
+        problem.addConstraint(hacer_tareas_spc_exterior(avion), avion)
+
+    # Añadimos la restricción de completitud de tareas t2 antes de t1 a todas las listas
+    # de cada avión en las diferentes franjas horarias si tienen restr==True
+    for avion in variables:
+        # print(avion)
+        if avion[0].restr:
+            print("Añadiendo restricción de tareas SPC antes de STD al avión ", avion)
+            problem.addConstraint(tareas_spc_primero_exterior(avion), avion)
+
+
+def leer_parametros(path_param):
+    global NFRANJAS, FILAS, COLUMNAS, dominio, variables, problem
+
+    dominio = []    # Dominio del problema
+    variables = []  # Matriz de variables del problema
+
+    try:
+        with open(path_param, 'r') as file:
+            lines = file.readlines()
+
+        # Extraemos el número de franjas de tiempo
+        Franjas_line = lines[0].strip()
+        NFRANJAS = int(re.search(r"Franjas:\s*(\d+)", Franjas_line).group(1))
+
+        # Extraemos las dimensiones de la cuadrícula de talleres
+        dimensiones_talleres = lines[1].strip()
+        FILAS, COLUMNAS = map(int, dimensiones_talleres.split('x'))
+
+        # Extraemos los talleres de la cuadrícula del problema y sus posiciones
+        for line in lines[2:5]:
+            tipo, posiciones = line.split(":")
+            tipo = tipo.strip()
+            posiciones = re.findall(r"\((\d+),(\d+)\)", posiciones)
+
+            for posicion in posiciones:
+                row, col = map(int, posicion)
+                dominio.append(Taller(row, col, tipo))
+
+        # Extraemos los aviones del problema y añadimos las variables
+        for line in lines[5:]:
+            info_avion = line.split("-")
+            avion_i = []    # Lista del avión i en todas las franjas
+            for franja in range(NFRANJAS):
+                id = int(info_avion[0])
+                tipo = info_avion[1]
+                if info_avion[2] == "T":
+                    restr = True
+                elif info_avion[2] == "F":
+                    restr = False
+                else:
+                    print(f"Error en el fichero de entrada: restr incorrecto (RESTR: T/F).")
+                    sys.exit(1)
+
+                t1 = int(info_avion[3])
+                t2 = int(info_avion[4])
+                pos_ij = Avion(id, tipo, restr, t1, t2, franja)
+                # Variable es la posición de uno de los aviones en una franja específica, el
+                # dominio son todos los talleres de la cuadrícula
+                problem.addVariable(pos_ij, dominio)
+                avion_i.append(pos_ij)  # Añadimos el avión en la franja j a la lista del avión i
+
+            # Añadimos la lista del avión i en todas las franjas a la matriz de variables para poder
+            # usarla al crear las restricciones
+            variables.append(avion_i)
+
+
+    except FileNotFoundError:
+        print(f"Fichero de entrada '{path_param}' no encontrado.")
+        sys.exit(1)
+    except Exception as e:
+        print(f"Error en el fichero de entrada: {e}")
+        sys.exit(1)
+
+def main():
+    global problem
+    problem = constraint.Problem()
+
+    if len(sys.argv) != 2:
+        print("Uso: python CSPMaintenance.py <path maintenance>")
+        sys.exit(1)
+
+    file_path = sys.argv[1]
+    leer_parametros(file_path)
+
+    # Print the results
+    print(f"Franjas: {NFRANJAS}")
+    print(f"Cuadrícula: {FILAS}x{COLUMNAS}")
+    print("Dominio:", dominio)
+
+    for avion_i in variables:
+        print(avion_i)
+
+    añadir_restricciones()
+
+    """# Obtenemos una solución y la mostramos
+    solution = problem.getSolution()
+    print("Solución encontrada: ", solution)"""
+
+    solutions = problem.getSolutions()
+    if not solutions:
+        print("No solutions found")
+    else:
+        for solution in solutions:
+            print(solution)
+        print(len(solutions), " soluciones encontradas")
+
+
+if __name__ == "__main__":
+    main()
