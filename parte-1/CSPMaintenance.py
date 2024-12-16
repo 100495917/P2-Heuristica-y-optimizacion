@@ -4,7 +4,7 @@
 import constraint
 import sys
 import re
-
+import random
 
 global NFRANJAS, FILAS, COLUMNAS, dominio, variables
 global problem
@@ -86,10 +86,10 @@ class Avion:
         self._franja = value
 
     def __str__(self):
-        return f'{self.id}-{self.tipo}-{str(self.restr)[0]}-{self.t1}-{self.t2}(t={self.franja})'
+        return f'{self.id}-{self.tipo}-{str(self.restr)[0]}-{self.t1}-{self.t2}'
 
     def __repr__(self):
-        return f'{self.id}-{self.tipo}-{str(self.restr)[0]}-{self.t1}-{self.t2}(t={self.franja})'
+        return f'{self.id}-{self.tipo}-{str(self.restr)[0]}-{self.t1}-{self.t2}'
 
     def __lt__(self, other):
         return self.id < other.id
@@ -323,6 +323,8 @@ def añadir_restricciones():
 
 
 def leer_parametros(path_param):
+    """Función que lee todos los parámetros del archivo de entrada y crea el domninio y variables
+    del problema a partir de estos parámetros"""
     global NFRANJAS, FILAS, COLUMNAS, dominio, variables, problem
 
     dominio = []    # Dominio del problema
@@ -330,22 +332,30 @@ def leer_parametros(path_param):
 
     try:
         with open(path_param, 'r') as file:
+            # Leemos todas las líneas de el fichero de entrada
             lines = file.readlines()
 
         # Extraemos el número de franjas de tiempo
         Franjas_line = lines[0].strip()
+
+        # Usamos una expresión regular para extraer el dígito de "Franjas: d"
         NFRANJAS = int(re.search(r"Franjas:\s*(\d+)", Franjas_line).group(1))
 
         # Extraemos las dimensiones de la cuadrícula de talleres
         dimensiones_talleres = lines[1].strip()
+
+        # Separamos los valores de dimension por la "x"
         FILAS, COLUMNAS = map(int, dimensiones_talleres.split('x'))
 
         # Extraemos los talleres de la cuadrícula del problema y sus posiciones
         for line in lines[2:5]:
             tipo, posiciones = line.split(":")
             tipo = tipo.strip()
+
+            # Búsqueda de todas las strings del tipo "(d,d)" correspondientes a una posición
             posiciones = re.findall(r"\((\d+),(\d+)\)", posiciones)
 
+            # Creamos el dominio de Talleres (el orden no importa)
             for posicion in posiciones:
                 row, col = map(int, posicion)
                 dominio.append(Taller(row, col, tipo))
@@ -377,13 +387,45 @@ def leer_parametros(path_param):
             # usarla al crear las restricciones
             variables.append(avion_i)
 
-
     except FileNotFoundError:
         print(f"Fichero de entrada '{path_param}' no encontrado.")
         sys.exit(1)
     except Exception as e:
         print(f"Error en el fichero de entrada: {e}")
         sys.exit(1)
+
+
+def escribir_soluciones(file_path, solutions):
+    """Función que crea un nuevo archivo <file_path>.csv con el número de soluciones del problema
+    y añade entre 1 y 5 de las primeras soluciones encontradas por python-constraint"""
+    global NFRANJAS, variables
+
+    with open(file_path + ".csv", "w") as out_file:
+        out_file.write("N. Sol: " + str(len(solutions)) + "\n")
+
+        # Lista aplanada de las matriz de variables (avion_ij) que usaremos para ordenar las sols
+        array_variables = list(avion_ij for avion_i in variables for avion_ij in avion_i)
+
+        # Escribimos entre 1 y 5 soluciones de las primeras encontradas
+        for nsol in range(random.randint(1, min(5, len(solutions)))):
+            # Ordenamos la solución en base al orden de introducción de las variables, ya que a
+            # veces python-constraint devuelve los valores asignados en un orden distinto al
+            # orden en el que se han introducido las variables
+            solucion_ordenada = {key: solutions[nsol][key] for key in array_variables}
+
+            # Obtenemos los valores asignados a las variables
+            posiciones_solucion = list(solucion_ordenada.values())
+
+            out_file.write(f"Solución {nsol + 1}:\n")
+
+            index = 0
+            for avion_i in variables:
+                # Escribimos los valores correspondientes al avión i (tantos como franjas haya) y
+                # cambiamos index al indice de la primera asignación del siguiente avión
+                posiciones_avion_i = ", ".join(map(str, posiciones_solucion[index:index + NFRANJAS]))
+                out_file.write(f"\t{avion_i[0]}: {posiciones_avion_i}\n")
+                index += NFRANJAS
+
 
 def main():
     global problem
@@ -396,7 +438,6 @@ def main():
     file_path = sys.argv[1]
     leer_parametros(file_path)
 
-    # Print the results
     print(f"Franjas: {NFRANJAS}")
     print(f"Cuadrícula: {FILAS}x{COLUMNAS}")
     print("Dominio:", dominio)
@@ -411,12 +452,18 @@ def main():
     print("Solución encontrada: ", solution)"""
 
     solutions = problem.getSolutions()
-    if not solutions:
+    # Descomentar para ver las soluciones encontradas por terminal
+    # TODO: quitar todos los prints
+    """if not solutions:
         print("No solutions found")
     else:
         for solution in solutions:
-            print(solution)
-        print(len(solutions), " soluciones encontradas")
+            ordered_solution = {key: solution[key] for key in
+                                (item for sublist in variables for item in sublist)}
+            print(ordered_solution)
+        print(len(solutions), " soluciones encontradas")"""
+
+    escribir_soluciones(file_path, solutions)
 
 
 if __name__ == "__main__":
