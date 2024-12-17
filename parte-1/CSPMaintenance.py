@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 import constraint
 import sys
@@ -9,8 +9,10 @@ import random
 global NFRANJAS, FILAS, COLUMNAS, dominio, variables
 global problem
 
+
 class Avion:
     """Clase para representar un avión en una franja de tiempo específica"""
+
     def __init__(self, id: int, tipo: str, restr: bool, t1: int, t2: int, franja: int):
         self._id = None
         self._tipo = None
@@ -23,7 +25,7 @@ class Avion:
         self.tipo = tipo  # Setter valida
         self.t1 = t1  # Setter valida
         self.t2 = t2  # Setter valida
-        self.franja = franja # Setter valida
+        self.franja = franja  # Setter valida
 
     @property
     def id(self):
@@ -32,7 +34,7 @@ class Avion:
     @id.setter
     def id(self, value):
         if not isinstance(value, int) or value <= 0:
-            raise ValueError("id must be a positive nonzero integer.")
+            raise ValueError("id debe ser un entero positivo.")
         self._id = value
 
     @property
@@ -42,7 +44,7 @@ class Avion:
     @tipo.setter
     def tipo(self, value):
         if value not in {"JMB", "STD"}:
-            raise ValueError('tipo must be either "JMB" or "STD".')
+            raise ValueError('tipo debe ser "JMB" o "STD".')
         self._tipo = value
 
     @property
@@ -52,7 +54,7 @@ class Avion:
     @restr.setter
     def restr(self, value):
         if not isinstance(value, bool):
-            raise ValueError("restr must be a boolean.")
+            raise ValueError("restr debe ser un booleano.")
         self._restr = value
 
     @property
@@ -62,7 +64,7 @@ class Avion:
     @t1.setter
     def t1(self, value):
         if not isinstance(value, int) or value < 0:
-            raise ValueError("t1 must be a positive integer (or zero).")
+            raise ValueError("t1 debe ser un entero positivo o cero.")
         self._t1 = value
 
     @property
@@ -72,7 +74,7 @@ class Avion:
     @t2.setter
     def t2(self, value):
         if not isinstance(value, int) or value < 0:
-            raise ValueError("t2 must be a positive integer (or zero).")
+            raise ValueError("t2 debe ser un entero positivo o cero.")
         self._t2 = value
 
     @property
@@ -82,7 +84,7 @@ class Avion:
     @franja.setter
     def franja(self, value):
         if not isinstance(value, int) or value < 0:
-            raise ValueError("franja must be a positive integer (or zero).")
+            raise ValueError("franja debe ser un entero positivo o cero.")
         self._franja = value
 
     def __str__(self):
@@ -97,17 +99,19 @@ class Avion:
     def __gt__(self, other):
         return self.id > other.id
 
+
 class Taller:
     """Clase que representa uno de los talleres de la cuadrícula del problema"""
+
     def __init__(self, row: int, col: int, tipo: str):
         self._row = None
         self._col = None
         self._tipo = None
-        #self._franja = None
+        # self._franja = None
 
-        self.row = row       # Setter valida
-        self.col = col       # Setter valida
-        self.tipo = tipo     # Setter valida
+        self.row = row  # Setter valida
+        self.col = col  # Setter valida
+        self.tipo = tipo  # Setter valida
 
     @property
     def row(self):
@@ -116,7 +120,7 @@ class Taller:
     @row.setter
     def row(self, value):
         if not isinstance(value, int) or value < 0:
-            raise ValueError("row must be a non-negative integer (0 or greater).")
+            raise ValueError("row debe ser un entero positivo o cero..")
         self._row = value
 
     @property
@@ -126,7 +130,7 @@ class Taller:
     @col.setter
     def col(self, value):
         if not isinstance(value, int) or value < 0:
-            raise ValueError("col must be a non-negative integer (0 or greater).")
+            raise ValueError("col debe ser un entero positivo o cero..")
         self._col = value
 
     @property
@@ -136,7 +140,7 @@ class Taller:
     @tipo.setter
     def tipo(self, value):
         if value not in {"STD", "SPC", "PRK"}:
-            raise ValueError('tipo must be one of "STD", "SPC", or "PRK".')
+            raise ValueError('tipo debe ser "STD", "SPC", o "PRK".')
         self._tipo = value
 
     def __str__(self):
@@ -154,41 +158,38 @@ def limite_aviones_por_taller_exterior(aviones_franja):
         # Assignments contiene las asignaciones de tipo Taller a las variables de tipo Avion
         # aviones_franja es una lista los aviones de una sola franja de tiempo
         # Contamos en 2 diccionarios la cantidad de aviones y aviones JMB para cada Taller asignado
-        #print(assignments)
-        #print(aviones_franja)
 
-        plane_count = {}
-        jmb_count = {}
+        cantidad_aviones = {}
+        cantidad_jmb = {}
         for i in range(len(assignments)):
             if aviones_franja[i].tipo == "STD":
                 # Añadimos el taller al diccionario si no estaba ya y sumamos 1
-                plane_count[assignments[i]] = plane_count.get(assignments[i], 0) + 1
+                cantidad_aviones[assignments[i]] = cantidad_aviones.get(assignments[i], 0) + 1
             else:
                 # Añadimos 1 al total de aviones y de aviones JMB
-                plane_count[assignments[i]] = plane_count.get(assignments[i], 0) + 1
-                jmb_count[assignments[i]] = jmb_count.get(assignments[i], 0) + 1
-        #print("Total planes: ", plane_count)
-        #print("Total JMB planes: ", jmb_count)
+                cantidad_aviones[assignments[i]] = cantidad_aviones.get(assignments[i], 0) + 1
+                cantidad_jmb[assignments[i]] = cantidad_jmb.get(assignments[i], 0) + 1
         # No más de 2 aviones totales y no más de 1 avión JMB
-        if (not (all(plane_count_taller <= 2 for plane_count_taller in plane_count.values())) or
-                (not all(jmb_count_taller <= 1 for jmb_count_taller in jmb_count.values()))):
+        if (not (all(cantidad_aviones_taller <= 2 for cantidad_aviones_taller in
+                     cantidad_aviones.values())) or
+                (not all(
+                    cantidad_jmb_taller <= 1 for cantidad_jmb_taller in cantidad_jmb.values()))):
             return False
         return True
-    return limite_aviones_por_taller    # Devolvemos el valor de la función interior
+
+    return limite_aviones_por_taller  # Devolvemos el valor de la función interior
 
 
 # Al menos un taller adyacente libre para cada taller asignado a un avión
 def parking_adyacente_vacio(*assignments):
-    global dominio      # Usamos la matriz de talleres con la que se define el problema
+    global dominio  # Usamos la matriz de talleres con la que se define el problema
     global FILAS
     global COLUMNAS
 
     posiciones_ocupadas = {(taller.row, taller.col) for taller in
-                          assignments}  # Posiciones ocupadas
-    #print(posiciones_ocupadas)
+                           assignments}  # Posiciones ocupadas
 
     for taller in assignments:
-        #print(taller)
         r, c = taller.row, taller.col  # Fila y columna del taller actual
 
         # Obtener posiciones adyacentes sin salir del rango
@@ -202,16 +203,13 @@ def parking_adyacente_vacio(*assignments):
             (ar, ac) for ar, ac in adjacent_positions
             if 0 <= ar < FILAS and 0 <= ac < COLUMNAS  # Eliminar las posiciones fuera de rango
         ]
-        # print(adjacent_positions)
 
         # Devolver false si no hay ninguna posición adyacente no en las posiciones ocupadas
         if not any((ar, ac) not in posiciones_ocupadas for ar, ac in adjacent_positions):
-            # print(False)
             return False
 
-    # print(True)
-    # print(posiciones_ocupadas)
     return True
+
 
 # No puede haber aviones de tipo JMB adyacentes en la cuadrícula
 def no_jmb_adyacentes_exterior(aviones_franja):
@@ -223,8 +221,8 @@ def no_jmb_adyacentes_exterior(aviones_franja):
         # Posiciones ocupadas por aviones JMB
         jmb_positions = {
             (taller.row, taller.col)
-            for taller, plane in zip(assignments, aviones_franja)
-            if plane.tipo == "JMB"
+            for taller, avion in zip(assignments, aviones_franja)
+            if avion.tipo == "JMB"
         }
 
         for (r, c) in jmb_positions:
@@ -245,23 +243,25 @@ def no_jmb_adyacentes_exterior(aviones_franja):
                 return False
 
         return True
-    return no_jmb_adyacentes    # Devolvemos el valor de la función interior
+
+    return no_jmb_adyacentes  # Devolvemos el valor de la función interior
 
 
 # Restricción de que todos las tareas tienen que hacerse en todos los aviones a lo largo de todas
 # las franjas. Esta restricción permite que las tareas STD se hagan en talleres SPC
 def hacer_tareas_total_exterior(avion):
     def hacer_tareas_total(*assignments):
-        #print(avion)
         # Assignments contiene las asignaciones de tipo Taller a las variables de tipo Avion
         # avion es una lista con un mismo avión en todas sus franjas de tiempo
         # Contamos la cantidad de asignaciones a talleres STD y SPC
-        numero_tareas = sum(1 for taller in assignments if (taller.tipo == "STD" or taller.tipo == "SPC"))
-        #print("count: ", numero_tareas)
-        #print("tareas totales del avión ", plane[0].id, ": ", plane[0].t1 + plane[0].t2)
-        #print(avion[0].id, assignments)
-        return numero_tareas == avion[0].t1 + avion[0].t2   # ¿Todas las tareas hechas?
-    return hacer_tareas_total   # Devolvemos el valor de la función interior
+        numero_tareas = (
+            sum(1 for taller in assignments if (taller.tipo == "STD" or taller.tipo == "SPC")))
+
+        # Usamos >= ya que hemos asumido que un avión puede descansar en un taller libre aun que no
+        # realize una tarea de mantenimiento
+        return numero_tareas >= avion[0].t1 + avion[0].t2  # ¿Todas las tareas hechas?
+
+    return hacer_tareas_total  # Devolvemos el valor de la función interior
 
 
 # Restricción de que todos las tareas SPC tienen que hacerse en todos
@@ -269,14 +269,13 @@ def hacer_tareas_total_exterior(avion):
 def hacer_tareas_spc_exterior(avion):
     def hacer_tareas_spc(*assignments):
         # Assignments contiene las asignaciones de tipo Taller a las variables de tipo Avion
-        # plane es una lista con un mismo avión en todas sus franjas de tiempo
+        # avion es una lista con un mismo avión en todas sus franjas de tiempo
         # Contamos la cantidad de asignaciones a talleres STD
         std_count = sum(1 for taller in assignments if taller.tipo == "SPC")
-        #print("count: ", std_count)
-        #print("Tareas especiales del avión ", plane[0].id, ": ", plane[0].t2)
         # Usamos >= porque puede haber tareas STD hechas en talleres SPC
         return std_count >= avion[0].t2
-    return hacer_tareas_spc # Devolvemos el valor de la función interior
+
+    return hacer_tareas_spc  # Devolvemos el valor de la función interior
 
 
 # Tareas SPC hechas todas antes de entrar a un taller STD
@@ -284,20 +283,21 @@ def tareas_spc_primero_exterior(avion):
     def tareas_spc_primero(*assignments):
         cuenta_acceso_talleres_spc = 0
         for taller in assignments:
-            if cuenta_acceso_talleres_spc < avion[0].t2:    # Tareas SPC sin completar
-                if taller.tipo == "SPC":    # Completamos una tarea SPC
+            if cuenta_acceso_talleres_spc < avion[0].t2:  # Tareas SPC sin completar
+                if taller.tipo == "SPC":  # Completamos una tarea SPC
                     cuenta_acceso_talleres_spc += 1
-                elif taller.tipo == "STD":   # Acceso a un STD sin completar todas las tareas SPC
+                elif taller.tipo == "STD":  # Acceso a un STD sin completar todas las tareas SPC
                     return False
         return True
+
     return tareas_spc_primero
 
 
 def añadir_restricciones():
     global problem, variables, NFRANJAS
 
-    # Añadimos las retricciones relacionadas con la posición de los aviones para cada franja específica
-    print("Añadiendo restricciones posicionales.")
+    # Añadimos las retricciones relacionadas con la posición de los aviones para cada franja
+    print("Añadiendo restricciones posicionales a todos los aviones...")
     for franja in range(NFRANJAS):
         aviones_franja = [avion_i[franja] for avion_i in variables]
         problem.addConstraint(parking_adyacente_vacio, aviones_franja)
@@ -308,17 +308,16 @@ def añadir_restricciones():
 
     # Añadimos la restricción de completitud de tareas totales y tareas t2 a todas las listas
     # de cada avión, que incluyen el avión en las diferentes franjas horarias
+    print("Añadiendo restricciones de tareas todos los aviones...")
     for avion in variables:
-        print("Añadiendo restricciones de tareas al avión ", avion)
         problem.addConstraint(hacer_tareas_total_exterior(avion), avion)
         problem.addConstraint(hacer_tareas_spc_exterior(avion), avion)
 
     # Añadimos la restricción de completitud de tareas t2 antes de t1 a todas las listas
     # de cada avión en las diferentes franjas horarias si tienen restr==True
     for avion in variables:
-        # print(avion)
         if avion[0].restr:
-            print("Añadiendo restricción de tareas SPC antes de STD al avión ", avion)
+            print("Añadiendo restricción de tareas SPC antes de STD al avión ", avion[0])
             problem.addConstraint(tareas_spc_primero_exterior(avion), avion)
 
 
@@ -327,7 +326,7 @@ def leer_parametros(path_param):
     del problema a partir de estos parámetros"""
     global NFRANJAS, FILAS, COLUMNAS, dominio, variables, problem
 
-    dominio = []    # Dominio del problema
+    dominio = []  # Dominio del problema
     variables = []  # Matriz de variables del problema
 
     try:
@@ -336,10 +335,10 @@ def leer_parametros(path_param):
             lines = file.readlines()
 
         # Extraemos el número de franjas de tiempo
-        Franjas_line = lines[0].strip()
+        linea_franjas = lines[0].strip()
 
         # Usamos una expresión regular para extraer el dígito de "Franjas: d"
-        NFRANJAS = int(re.search(r"Franjas:\s*(\d+)", Franjas_line).group(1))
+        NFRANJAS = int(re.search(r"Franjas:\s*(\d+)", linea_franjas).group(1))
 
         # Extraemos las dimensiones de la cuadrícula de talleres
         dimensiones_talleres = lines[1].strip()
@@ -363,7 +362,7 @@ def leer_parametros(path_param):
         # Extraemos los aviones del problema y añadimos las variables
         for line in lines[5:]:
             info_avion = line.split("-")
-            avion_i = []    # Lista del avión i en todas las franjas
+            avion_i = []  # Lista del avión i en todas las franjas
             for franja in range(NFRANJAS):
                 id = int(info_avion[0])
                 tipo = info_avion[1]
@@ -422,7 +421,8 @@ def escribir_soluciones(file_path, solutions):
             for avion_i in variables:
                 # Escribimos los valores correspondientes al avión i (tantos como franjas haya) y
                 # cambiamos index al indice de la primera asignación del siguiente avión
-                posiciones_avion_i = ", ".join(map(str, posiciones_solucion[index:index + NFRANJAS]))
+                posiciones_avion_i = ", ".join(
+                    map(str, posiciones_solucion[index:index + NFRANJAS]))
                 out_file.write(f"\t{avion_i[0]}: {posiciones_avion_i}\n")
                 index += NFRANJAS
 
@@ -442,26 +442,13 @@ def main():
     print(f"Cuadrícula: {FILAS}x{COLUMNAS}")
     print("Dominio:", dominio)
 
+    print("Aviones del problema: ")
     for avion_i in variables:
-        print(avion_i)
+        print(avion_i[0])
 
     añadir_restricciones()
 
-    """# Obtenemos una solución y la mostramos
-    solution = problem.getSolution()
-    print("Solución encontrada: ", solution)"""
-
     solutions = problem.getSolutions()
-    # Descomentar para ver las soluciones encontradas por terminal
-    # TODO: quitar todos los prints
-    """if not solutions:
-        print("No solutions found")
-    else:
-        for solution in solutions:
-            ordered_solution = {key: solution[key] for key in
-                                (item for sublist in variables for item in sublist)}
-            print(ordered_solution)
-        print(len(solutions), " soluciones encontradas")"""
 
     escribir_soluciones(file_path, solutions)
 
