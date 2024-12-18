@@ -404,27 +404,27 @@ def escribir_soluciones(file_path, solutions):
 
         # Lista aplanada de las matriz de variables (avion_ij) que usaremos para ordenar las sols
         array_variables = list(avion_ij for avion_i in variables for avion_ij in avion_i)
+        if len(solutions) > 0:
+            # Escribimos entre 1 y 5 soluciones de las primeras encontradas
+            for nsol in range(random.randint(1, min(5, len(solutions)))):
+                # Ordenamos la solución en base al orden de introducción de las variables, ya que a
+                # veces python-constraint devuelve los valores asignados en un orden distinto al
+                # orden en el que se han introducido las variables
+                solucion_ordenada = {key: solutions[nsol][key] for key in array_variables}
 
-        # Escribimos entre 1 y 5 soluciones de las primeras encontradas
-        for nsol in range(random.randint(1, min(5, len(solutions)))):
-            # Ordenamos la solución en base al orden de introducción de las variables, ya que a
-            # veces python-constraint devuelve los valores asignados en un orden distinto al
-            # orden en el que se han introducido las variables
-            solucion_ordenada = {key: solutions[nsol][key] for key in array_variables}
+                # Obtenemos los valores asignados a las variables
+                posiciones_solucion = list(solucion_ordenada.values())
 
-            # Obtenemos los valores asignados a las variables
-            posiciones_solucion = list(solucion_ordenada.values())
+                out_file.write(f"Solución {nsol + 1}:\n")
 
-            out_file.write(f"Solución {nsol + 1}:\n")
-
-            index = 0
-            for avion_i in variables:
-                # Escribimos los valores correspondientes al avión i (tantos como franjas haya) y
-                # cambiamos index al indice de la primera asignación del siguiente avión
-                posiciones_avion_i = ", ".join(
-                    map(str, posiciones_solucion[index:index + NFRANJAS]))
-                out_file.write(f"\t{avion_i[0]}: {posiciones_avion_i}\n")
-                index += NFRANJAS
+                index = 0
+                for avion_i in variables:
+                    # Escribimos los valores correspondientes al avión i (tantos como franjas haya) y
+                    # cambiamos index al indice de la primera asignación del siguiente avión
+                    posiciones_avion_i = ", ".join(
+                        map(str, posiciones_solucion[index:index + NFRANJAS]))
+                    out_file.write(f"\t{avion_i[0]}: {posiciones_avion_i}\n")
+                    index += NFRANJAS
 
 
 def main():
