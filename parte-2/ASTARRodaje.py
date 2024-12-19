@@ -9,6 +9,7 @@ from itertools import product
 # Variables globales (se llenarán al leer el mapa)
 goals = []
 mapa = []
+# Usamos sets para las celdas porque permite operaciones de búsqueda rápidas para verificar si una celda pertence al conjunto
 Mgris = set()
 Mamarillo = set()
 Mtransitable = set()
