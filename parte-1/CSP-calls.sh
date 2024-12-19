@@ -12,3 +12,4 @@ python CSPMaintenance.py ./CSP-tests/maintenance09
 python CSPMaintenance.py ./CSP-tests/maintenance10
 python CSPMaintenance.py ./CSP-tests/maintenance11
 python CSPMaintenance.py ./CSP-tests/maintenance12
+python CSPMaintenance.py ./CSP-tests/maintenance13
